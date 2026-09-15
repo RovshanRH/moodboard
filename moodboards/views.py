@@ -25,6 +25,7 @@ def _moodboard_data(moodboard: Moodboard) -> dict:
         "title": moodboard.title,
         "description": moodboard.description,
         "background_color": moodboard.background_color,
+        "palette": list(moodboard.palette or []),
         "designer": {
             "id": moodboard.designer_id,
             "name": moodboard.designer.display_name,
@@ -143,6 +144,23 @@ def moodboard_list(request: HttpRequest) -> JsonResponse:
         if client is None:
             return JsonResponse({"error": "Заказчик не найден."}, status=404)
 
+    palette = data.get("palette", [])
+    if palette is not None and not isinstance(palette, list):
+        return JsonResponse(
+            {"error": "Палитра должна представлять собой список цветов."},
+            status=400,
+        )
+    if palette:
+        invalid_colors = [
+            color for color in palette if not isinstance(color, str)
+              or len(color) != 7 or color[0] != "#"
+        ]
+        if invalid_colors:
+            return JsonResponse(
+                {"error": "Каждый цвет в палитре должен быть в формате #RRGGBB."},
+                status=400,
+            )
+
     moodboard = Moodboard.objects.create(
         designer=designer,
         catalog=catalog,
@@ -150,6 +168,7 @@ def moodboard_list(request: HttpRequest) -> JsonResponse:
         title=title,
         description=data.get("description", "").strip(),
         background_color=data.get("background_color", "#F4EFE6"),
+        palette=palette,
     )
     return JsonResponse(_moodboard_data(moodboard), status=201)
 
@@ -172,6 +191,11 @@ def moodboard_export(
     draw.text((100, 100), moodboard.title, fill="#1E1E1E")
     if moodboard.description:
         draw.text((100, 180), moodboard.description, fill="#3D3D3D")
+    if moodboard.palette:
+        x = 100
+        for color in moodboard.palette[:5]:
+            draw.rectangle((x, 260, x + 120, 330), fill=color)
+            x += 150
     output = BytesIO()
     image.save(output, format="PNG")
     output.seek(0)

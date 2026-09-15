@@ -1,6 +1,11 @@
+import re
+
+from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
 from django.db import models
+
+HEX_COLOR_RE = r"^#[0-9A-Fa-f]{6}$"
 
 
 class Designer(models.Model):
@@ -47,9 +52,19 @@ class MoodboardCatalog(models.Model):
         return self.name
 
 
+def validate_palette(value: list[str]) -> None:
+    if not isinstance(value, list):
+        raise ValidationError("Палитра должна быть списком цветов.")
+
+    for color in value:
+        if not isinstance(color, str) or not re.fullmatch(HEX_COLOR_RE[1:-1], 
+                                                          color):
+            raise ValidationError("Каждый цвет должен быть в формате #RRGGBB.")
+
+
 class Moodboard(models.Model):
     HEX_COLOR = RegexValidator(
-        regex=r"^#[0-9A-Fa-f]{6}$",
+        regex=HEX_COLOR_RE,
         message="Цвет должен быть в формате #RRGGBB.",
     )
 
@@ -79,6 +94,8 @@ class Moodboard(models.Model):
         default="#F4EFE6",
         validators=[HEX_COLOR],
     )
+    palette = models.JSONField(default=list, blank=True, 
+                               validators=[validate_palette])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

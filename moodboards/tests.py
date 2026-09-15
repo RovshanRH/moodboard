@@ -44,6 +44,23 @@ class MoodboardApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()["items"]), 1)
 
+    def test_moodboard_palette_accepts_multiple_colors(self) -> None:
+        colors = ["#112233", "#AABBCC", "#DDEEFF"]
+        response = self.client.post(
+            "/api/moodboards/",
+            data={
+                "title": "Палитра бренда",
+                "palette": colors,
+                "background_color": "#FFFFFF",
+            },
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["palette"], colors)
+
+        saved_board = Moodboard.objects.get(id=response.json()["id"])
+        self.assertEqual(saved_board.palette, colors)
+
     def test_export_returns_png(self) -> None:
         board = Moodboard.objects.create(
             designer=Designer.objects.get(user__username="designer"),
