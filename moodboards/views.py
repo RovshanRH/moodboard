@@ -1,6 +1,6 @@
 from io import BytesIO
 import json
-from typing import Any
+from typing import Any, cast
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -27,21 +27,21 @@ def _text_value(data: dict[str, Any], key: str, default: str = "") -> str | None
 
 def _moodboard_data(moodboard: Moodboard) -> dict:
     return {
-        "id": moodboard.id,
+        "id": moodboard.pk,
         "title": moodboard.title,
         "description": moodboard.description,
         "background_color": moodboard.background_color,
         "designer": {
-            "id": moodboard.designer_id,
+            "id": moodboard.designer.pk,
             "name": moodboard.designer.display_name,
         },
         "catalog": (
-            {"id": moodboard.catalog_id, "name": moodboard.catalog.name}
+            {"id": moodboard.catalog.pk, "name": moodboard.catalog.name}
             if moodboard.catalog
             else None
         ),
         "client": (
-            {"id": moodboard.client_id, "name": moodboard.client.name}
+            {"id": moodboard.client.pk, "name": moodboard.client.name}
             if moodboard.client
             else None
         ),
@@ -78,11 +78,11 @@ def auth_view(request: HttpRequest) -> JsonResponse:
                     status=401,
                 )
             login(request, user)
-            designer = user.designer
+            designer = Designer.objects.get(user=user)
             return JsonResponse(
                 {
-                    "id": designer.id,
-                    "username": user.username,
+                    "id": designer.pk,
+                    "username": user.get_username(),
                     "display_name": designer.display_name,
                 }
             )
@@ -95,7 +95,7 @@ def auth_view(request: HttpRequest) -> JsonResponse:
         login(request, user)
         return JsonResponse(
             {
-                "id": designer.id,
+                "id": designer.pk,
                 "username": user.username,
                 "display_name": display_name,
             },
@@ -114,7 +114,8 @@ def moodboard_list(request: HttpRequest) -> JsonResponse:
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Требуется авторизация."}, status=401)
 
-    designer = request.user.designer
+    user = cast(User, request.user)
+    designer = Designer.objects.get(user=user)
     if request.method == "GET":
         boards = Moodboard.objects.filter(designer=designer).select_related(
             "designer", "catalog", "client"
@@ -189,7 +190,7 @@ def moodboard_export(
         return JsonResponse({"error": "Требуется авторизация."}, status=401)
     moodboard = Moodboard.objects.filter(
         id=moodboard_id,
-        designer=request.user.designer,
+        designer=Designer.objects.get(user=cast(User, request.user)),
     ).first()
     if moodboard is None:
         return JsonResponse({"error": "Мудборд не найден."}, status=404)
@@ -202,5 +203,5 @@ def moodboard_export(
     output = BytesIO()
     image.save(output, format="PNG")
     output.seek(0)
-    filename = f"moodboard-{moodboard.id}.png"
+    filename = f"moodboard-{moodboard.pk}.png"
     return FileResponse(output, as_attachment=True, filename=filename)
