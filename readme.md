@@ -16,6 +16,25 @@
 можно выбрать только среди каталогов текущего дизайнера, поэтому объекты
 взаимодействуют через явные связи моделей, а не через разрозненные словари.
 
+## Объектная модель
+
+Основные сущности представлены классами Django-моделей:
+
+- `Designer`: атрибуты `user`, `display_name`, `bio`; методы `owns_catalog()` и
+	`owns_moodboard()`;
+- `Client`: атрибуты `name`, `email`, `company`; метод `contact_label()`;
+- `MoodboardCatalog`: атрибуты `designer`, `name`, `description`; метод
+	`belongs_to()`;
+- `Moodboard`: атрибуты `designer`, `catalog`, `client`, `title`, `description`,
+	`background_color`, `created_at`, `updated_at`; методы `can_use_catalog()`,
+	`assign_catalog()`, `assign_client()`, `change_background()` и `to_data()`.
+
+Каждый класс имеет конструктор `__init__` и строковое представление `__str__`.
+Коллекции объектов формируются Django QuerySet при работе с базой данных и
+передаются в функции `storage.py`. Операции, относящиеся к одному объекту,
+находятся в его методах, а поиск по коллекциям выполняется обычными функциями
+`find_client()` и `find_catalog()`.
+
 ## Основные функции
 
 ### Авторизация
@@ -81,12 +100,27 @@ moodboard/
 │   └── wsgi.py
 ├── moodboards/
 │   ├── migrations/
+│   ├── management/
+│   │   └── commands/
+│   │       ├── export_data.py
+│   │       └── import_data.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── catalog.py
+│   │   ├── client.py
+│   │   ├── designer.py
+│   │   └── moodboard.py
+│   ├── tests/
+│   │   ├── __init__.py
+│   │   └── test_api.py
+│   ├── storage.py
 │   ├── admin.py
-│   ├── models.py
-│   ├── tests.py
+│   ├── apps.py
 │   ├── urls.py
 │   └── views.py
 ├── main.py
+├── data/
+│   └── moodboards.json
 ├── manage.py
 └── requirements.txt
 ```
@@ -113,7 +147,33 @@ python manage.py runserver
 ```text
 python manage.py check
 python manage.py test
+python -m pytest -v
+python -m flake8 .
 ```
+
+## Загрузка и сохранение данных
+
+Каталог `data/` содержит JSON-файл обмена данными. Экспорт выполняется для
+конкретного дизайнера:
+
+```text
+python manage.py export_data anna
+```
+
+Загрузка выполняется обратно в SQLite:
+
+```text
+python manage.py import_data anna
+```
+
+Другой файл можно указать параметром `--file`. При ошибочном JSON или
+неполных данных команда завершается с понятным сообщением об ошибке.
+
+При экспорте объекты `Client`, `MoodboardCatalog` и `Moodboard` преобразуются
+в обычные JSON-структуры. При импорте JSON обратно создаются экземпляры этих
+классов, а связи мудборда с каталогом и клиентом восстанавливаются по имени и
+email. JSON используется как формат обмена, основным хранилищем приложения
+остаётся SQLite Django.
 
 ## План развития
 
