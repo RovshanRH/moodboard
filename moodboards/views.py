@@ -1,9 +1,10 @@
 from io import BytesIO
 import json
-from typing import Any
+from typing import Any, cast
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.http import FileResponse, HttpRequest, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image, ImageDraw
@@ -19,24 +20,29 @@ def _json_body(request: HttpRequest) -> dict[str, Any] | None:
     return data if isinstance(data, dict) else None
 
 
+def _text_value(data: dict[str, Any], key: str, default: str = "") -> str | None:
+    value = data.get(key, default)
+    return value.strip() if isinstance(value, str) else None
+
+
 def _moodboard_data(moodboard: Moodboard) -> dict:
     return {
-        "id": moodboard.id,
+        "id": moodboard.pk,
         "title": moodboard.title,
         "description": moodboard.description,
         "background_color": moodboard.background_color,
         "palette": list(moodboard.palette or []),
         "designer": {
-            "id": moodboard.designer_id,
+            "id": moodboard.designer.pk,
             "name": moodboard.designer.display_name,
         },
         "catalog": (
-            {"id": moodboard.catalog_id, "name": moodboard.catalog.name}
+            {"id": moodboard.catalog.pk, "name": moodboard.catalog.name}
             if moodboard.catalog
             else None
         ),
         "client": (
-            {"id": moodboard.client_id, "name": moodboard.client.name}
+            {"id": moodboard.client.pk, "name": moodboard.client.name}
             if moodboard.client
             else None
         ),
@@ -52,10 +58,15 @@ def auth_view(request: HttpRequest) -> JsonResponse:
         if data is None:
             return JsonResponse({"error": "Некорректный JSON."}, status=400)
 
-        username = data.get("username", "").strip()
+        username = _text_value(data, "username")
         password = data.get("password", "")
-        display_name = data.get("display_name", username).strip()
-        if not username or not password or not display_name:
+        display_name = _text_value(data, "display_name", username or "")
+        if (
+            not username
+            or not isinstance(password, str)
+            or not password
+            or not display_name
+        ):
             return JsonResponse(
                 {"error": "Нужны username, password и display_name."},
                 status=400,
@@ -68,11 +79,11 @@ def auth_view(request: HttpRequest) -> JsonResponse:
                     status=401,
                 )
             login(request, user)
-            designer = user.designer
+            designer = Designer.objects.get(user=user)
             return JsonResponse(
                 {
-                    "id": designer.id,
-                    "username": user.username,
+                    "id": designer.pk,
+                    "username": user.get_username(),
                     "display_name": designer.display_name,
                 }
             )
@@ -85,7 +96,7 @@ def auth_view(request: HttpRequest) -> JsonResponse:
         login(request, user)
         return JsonResponse(
             {
-                "id": designer.id,
+                "id": designer.pk,
                 "username": user.username,
                 "display_name": display_name,
             },
@@ -104,7 +115,8 @@ def moodboard_list(request: HttpRequest) -> JsonResponse:
     if not request.user.is_authenticated:
         return JsonResponse({"error": "Требуется авторизация."}, status=401)
 
-    designer = request.user.designer
+    user = cast(User, request.user)
+    designer = Designer.objects.get(user=user)
     if request.method == "GET":
         boards = Moodboard.objects.filter(designer=designer).select_related(
             "designer", "catalog", "client"
@@ -120,7 +132,7 @@ def moodboard_list(request: HttpRequest) -> JsonResponse:
     if data is None:
         return JsonResponse({"error": "Некорректный JSON."}, status=400)
 
-    title = data.get("title", "").strip()
+    title = _text_value(data, "title")
     if not title:
         return JsonResponse(
             {"error": "Название мудборда обязательно."},
@@ -130,6 +142,8 @@ def moodboard_list(request: HttpRequest) -> JsonResponse:
     catalog = None
     catalog_id = data.get("catalog_id")
     if catalog_id is not None:
+        if isinstance(catalog_id, bool) or not isinstance(catalog_id, int):
+            return JsonResponse({"error": "catalog_id должен быть числом."}, status=400)
         catalog = MoodboardCatalog.objects.filter(
             id=catalog_id,
             designer=designer,
@@ -140,36 +154,32 @@ def moodboard_list(request: HttpRequest) -> JsonResponse:
     client = None
     client_id = data.get("client_id")
     if client_id is not None:
+        if isinstance(client_id, bool) or not isinstance(client_id, int):
+            return JsonResponse({"error": "client_id должен быть числом."}, status=400)
         client = Client.objects.filter(id=client_id).first()
         if client is None:
             return JsonResponse({"error": "Заказчик не найден."}, status=404)
 
-    palette = data.get("palette", [])
-    if palette is not None and not isinstance(palette, list):
+    description = _text_value(data, "description")
+    background_color = data.get("background_color", "#F4EFE6")
+    if not isinstance(background_color, str):
         return JsonResponse(
-            {"error": "Палитра должна представлять собой список цветов."},
+            {"error": "background_color должен быть строкой формата #RRGGBB."},
             status=400,
         )
-    if palette:
-        invalid_colors = [
-            color for color in palette if not isinstance(color, str)
-              or len(color) != 7 or color[0] != "#"
-        ]
-        if invalid_colors:
-            return JsonResponse(
-                {"error": "Каждый цвет в палитре должен быть в формате #RRGGBB."},
-                status=400,
-            )
-
-    moodboard = Moodboard.objects.create(
+    moodboard = Moodboard(
         designer=designer,
         catalog=catalog,
         client=client,
         title=title,
-        description=data.get("description", "").strip(),
-        background_color=data.get("background_color", "#F4EFE6"),
-        palette=palette,
+        description=description or "",
+        background_color=background_color,
     )
+    try:
+        moodboard.full_clean()
+    except ValidationError as error:
+        return JsonResponse({"error": error.message_dict}, status=400)
+    moodboard.save()
     return JsonResponse(_moodboard_data(moodboard), status=201)
 
 
@@ -181,7 +191,7 @@ def moodboard_export(
         return JsonResponse({"error": "Требуется авторизация."}, status=401)
     moodboard = Moodboard.objects.filter(
         id=moodboard_id,
-        designer=request.user.designer,
+        designer=Designer.objects.get(user=cast(User, request.user)),
     ).first()
     if moodboard is None:
         return JsonResponse({"error": "Мудборд не найден."}, status=404)
@@ -199,5 +209,5 @@ def moodboard_export(
     output = BytesIO()
     image.save(output, format="PNG")
     output.seek(0)
-    filename = f"moodboard-{moodboard.id}.png"
+    filename = f"moodboard-{moodboard.pk}.png"
     return FileResponse(output, as_attachment=True, filename=filename)

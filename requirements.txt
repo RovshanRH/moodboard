@@ -2,3 +2,6 @@ Django>=5.2,<6.0
 Pillow>=11.0
 mypy>=1.15
 django-stubs>=5.2
+pytest>=8.0
+pytest-django>=4.8
+flake8>=7.0
