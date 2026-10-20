@@ -1,7 +1,12 @@
 {% extends "base.html" %}
 {% block title %}Мудборды — Moodboard{% endblock %}
 {% block content %}
-<h1 class="mb-4">Мудборды</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="mb-0">Мудборды</h1>
+  {% if user.is_authenticated and user.designer %}
+  <a class="btn btn-primary" href="{% url 'boards:create' %}">Создать мудборд</a>
+  {% endif %}
+</div>
 <div class="row g-4">
 {% for board in moodboards %}
   {% include "moodboards/includes/moodboard_card.html" with board=board %}

@@ -1,17 +1,19 @@
 from django.urls import path
 
-from .views import (
-    catalog_pages,
-    client_pages,
+from accounts.views import login_page, register_page
+from boards.views import (
     moodboard_detail_page,
     moodboard_pages,
     moodboard_search,
     moodboard_statistics,
 )
+from catalogs.views import catalog_pages, client_pages
 
 app_name = "moodboards"
 
 urlpatterns = [
+    path("register/", register_page, name="register"),
+    path("login/", login_page, name="login"),
     path("moodboards/", moodboard_pages, name="list"),
     path(
         "moodboards/<int:moodboard_id>/",

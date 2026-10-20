@@ -1,7 +1,6 @@
-from .catalog import MoodboardCatalog
-from .client import Client
-from .designer import Designer
-from .moodboard import Moodboard, validate_palette
+from accounts.models import Client, Designer
+from boards.models import Moodboard, validate_palette
+from catalogs.models import MoodboardCatalog
 
 __all__ = [
     "Client",

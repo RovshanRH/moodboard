@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — Moodboard{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    <h1>Регистрация</h1>
+    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+    <form method="post" class="card card-body mt-3">
+      {% csrf_token %}
+      <label class="form-label" for="username">Имя пользователя</label>
+      <input class="form-control mb-3" id="username" name="username" required>
+      <label class="form-label" for="display_name">Ваше имя или название</label>
+      <input class="form-control mb-3" id="display_name" name="display_name" required>
+      <label class="form-label" for="email">Email</label>
+      <input class="form-control mb-3" id="email" name="email" type="email">
+      <label class="form-label" for="role">Я регистрируюсь как</label>
+      <select class="form-select mb-3" id="role" name="role">
+        <option value="designer">Дизайнер</option>
+        <option value="client">Заказчик</option>
+      </select>
+      <label class="form-label" for="password">Пароль</label>
+      <input class="form-control mb-3" id="password" name="password" type="password" required>
+      <button class="btn btn-primary" type="submit">Создать аккаунт</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

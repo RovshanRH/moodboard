@@ -115,6 +115,12 @@ class MoodboardApiTests(TestCase):
         response = self.client.get("/api/moodboards/")
         self.assertEqual(response.status_code, 401)
 
+    def test_web_logout(self) -> None:
+        self.assertTrue(self.client.get("/").wsgi_request.user.is_authenticated)
+        response = self.client.post("/logout/")
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(response.wsgi_request.user.is_authenticated)
+
     def test_invalid_input_returns_bad_request(self) -> None:
         response = self.client.post(
             "/api/moodboards/",

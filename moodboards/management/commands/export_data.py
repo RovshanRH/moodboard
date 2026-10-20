@@ -3,8 +3,8 @@ from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError
 
-from moodboards.models import Designer
-from moodboards.storage import DEFAULT_DATA_PATH, export_data
+from accounts.models import Designer
+from boards.storage import DEFAULT_DATA_PATH, export_data
 
 
 class Command(BaseCommand):

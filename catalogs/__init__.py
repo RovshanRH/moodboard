@@ -1,0 +1,1 @@
+"""Catalogs and clients application."""

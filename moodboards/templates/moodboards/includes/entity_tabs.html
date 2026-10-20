@@ -1,0 +1,23 @@
+<ul class="nav nav-tabs mb-4" role="tablist" aria-label="Разделы Moodboard">
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == 'moodboards' %}active{% endif %}"
+       href="{% url 'moodboards:list' %}"
+       {% if active_tab == 'moodboards' %}aria-current="page"{% endif %}>
+      Мудборды
+    </a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == 'catalogs' %}active{% endif %}"
+       href="{% url 'moodboards:catalogs' %}"
+       {% if active_tab == 'catalogs' %}aria-current="page"{% endif %}>
+      Каталоги
+    </a>
+  </li>
+  <li class="nav-item" role="presentation">
+    <a class="nav-link {% if active_tab == 'clients' %}active{% endif %}"
+       href="{% url 'moodboards:clients' %}"
+       {% if active_tab == 'clients' %}aria-current="page"{% endif %}>
+      Заказчики
+    </a>
+  </li>
+</ul>
