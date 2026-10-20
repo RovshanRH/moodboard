@@ -5,6 +5,8 @@ from tempfile import TemporaryDirectory
 from django.contrib.auth.models import User
 from django.test import TestCase
 
+from db.database import query_all, query_one
+
 from ..models import Client, Designer, Moodboard, MoodboardCatalog
 from ..storage import export_data, import_data
 
@@ -57,10 +59,10 @@ class MoodboardApiTests(TestCase):
             palette=["#112233"],
         )
         self.assertEqual(self.client.get("/").status_code, 200)
-        self.assertContains(self.client.get("/moodboards/"), board.title)
+        self.assertContains(self.client.get("/moodboards/"), "Новый бренд")
         self.assertContains(
             self.client.get(f"/moodboards/{board.pk}/"),
-            "Страница проекта",
+            "Новый бренд",
         )
         self.assertEqual(self.client.get("/moodboards/999999/").status_code, 404)
         self.assertEqual(self.client.get("/catalogs/").status_code, 200)
@@ -68,7 +70,31 @@ class MoodboardApiTests(TestCase):
         response = self.client.get("/moodboards/")
         self.assertContains(response, "site.js")
         self.assertContains(response, "logo.svg")
-        self.assertContains(response, "Страница проекта")
+        self.assertContains(response, "Новый бренд")
+
+    def test_sqlite_pages_and_parameterized_search(self) -> None:
+        self.assertEqual(self.client.get("/search/?q=%27").status_code, 200)
+        self.assertEqual(self.client.get("/statistics/").status_code, 200)
+        self.assertEqual(self.client.get("/moodboards/").status_code, 200)
+
+    def test_sqlite_schema_has_relationships_and_rows(self) -> None:
+        self.assertEqual(
+            query_one("SELECT COUNT(*) AS count FROM designers")["count"],
+            1,
+        )
+        self.assertEqual(
+            query_one("SELECT COUNT(*) AS count FROM moodboards")["count"],
+            1,
+        )
+        joined = query_all(
+            """
+            SELECT m.title, c.name AS catalog_name, cl.email
+            FROM moodboards AS m
+            JOIN catalogs AS c ON c.id = m.catalog_id
+            JOIN clients AS cl ON cl.id = m.client_id
+            """
+        )
+        self.assertEqual(joined[0]["catalog_name"], "Брендинг")
 
     def test_export_returns_png(self) -> None:
         board = Moodboard.objects.create(

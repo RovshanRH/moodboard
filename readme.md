@@ -2,6 +2,8 @@
 
 Веб-бэкенд конструктора мудбордов для дизайнеров, фрилансеров и творческих
 команд. Проект реализован на Django и использует SQLite для локальной разработки.
+В ПР7 добавлен отдельный слой работы с SQLite через стандартный модуль `sqlite3`
+и SQL-запросы.
 
 ## Предметная область
 
@@ -73,6 +75,8 @@ Bootstrap 5.3 и статические файлы приложения:
 - `GET /moodboards/<id>/` — подробности мудборда (динамический URL);
 - `GET /catalogs/` — список каталогов;
 - `GET /clients/` — список заказчиков;
+- `GET /search/?q=бренд` — параметризованный поиск мудбордов по названию;
+- `GET /statistics/` — агрегированная статистика по данным SQLite;
 - неизвестные адреса обрабатываются страницей 404.
 
 Шаблоны используют наследование через `{% extends %}`, блоки `{% block %}`,
@@ -132,6 +136,12 @@ moodboard/
 │   ├── base.html
 │   └── includes/
 │       └── navigation.html
+├── db/
+│   ├── database.py
+│   └── import_json.py
+├── sql/
+│   ├── schema.sql
+│   └── queries.sql
 ├── moodboards/
 │   ├── api_urls.py
 │   ├── templates/
@@ -157,7 +167,8 @@ moodboard/
 │   └── views.py
 ├── main.py
 ├── data/
-│   └── moodboards.json
+│   ├── moodboards.json
+│   └── roomly.sqlite
 ├── manage.py
 └── requirements.txt
 ```
@@ -176,6 +187,17 @@ python -m pip install -r requirements.txt
 python manage.py migrate
 python manage.py runserver
 ```
+
+Создать структуру отдельной SQLite-базы и перенести данные из JSON:
+
+```text
+python -m db.import_json
+```
+
+SQL-схема находится в `sql/schema.sql`, готовые запросы предметной области —
+в `sql/queries.sql`. В представлениях SQLite-результаты читаются как
+`sqlite3.Row`, а пользовательские значения передаются в SQL через параметры
+`?`.
 
 Также `python main.py` запускает сервер разработки на `127.0.0.1:8000`.
 

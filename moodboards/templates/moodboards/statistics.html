@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Статистика — Moodboard{% endblock %}
+{% block content %}
+<h1>Статистика проекта</h1>
+<div class="row g-3 my-3">
+  <div class="col-md-4"><div class="card"><div class="card-body"><b>{{ summary.moodboard_count|default:0 }}</b><br>мудбордов</div></div></div>
+  <div class="col-md-4"><div class="card"><div class="card-body"><b>{{ summary.designer_count|default:0 }}</b><br>дизайнеров</div></div></div>
+  <div class="col-md-4"><div class="card"><div class="card-body"><b>{{ summary.client_count|default:0 }}</b><br>заказчиков</div></div></div>
+</div>
+<h2 class="h4">Мудборды по каталогам</h2>
+<table class="table">
+  <thead><tr><th>Каталог</th><th>Количество</th></tr></thead>
+  <tbody>
+  {% for item in by_catalog %}
+    <tr><td>{{ item.catalog_name }}</td><td>{{ item.moodboard_count }}</td></tr>
+  {% empty %}<tr><td colspan="2">Данных пока нет.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

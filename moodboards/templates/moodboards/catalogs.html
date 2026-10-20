@@ -7,7 +7,10 @@
   <div class="list-group-item">
     <h2 class="h5">{{ catalog.name }}</h2>
     <p class="mb-0">{{ catalog.description|default:"Описание не указано." }}</p>
-    <small class="text-muted">Дизайнер: {{ catalog.designer.display_name }}</small>
+    <small class="text-muted">Дизайнер:
+      {% if catalog.designer_name %}{{ catalog.designer_name }}{% else %}{{ catalog.designer.display_name }}{% endif %}
+    </small>
+    <small class="text-muted">Мудбордов: {{ catalog.moodboard_count|default:0 }}</small>
   </div>
 {% empty %}<p>Каталогов пока нет.</p>{% endfor %}
 </div>

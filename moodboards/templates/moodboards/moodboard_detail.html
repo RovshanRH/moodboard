@@ -6,9 +6,18 @@
   <h1>{{ moodboard.title }}</h1>
   <p class="lead">{{ moodboard.description|default:"Описание не указано." }}</p>
   <dl class="row">
-    <dt class="col-sm-3">Дизайнер</dt><dd class="col-sm-9">{{ moodboard.designer.display_name }}</dd>
-    <dt class="col-sm-3">Каталог</dt><dd class="col-sm-9">{{ moodboard.catalog|default:"Не выбран" }}</dd>
-    <dt class="col-sm-3">Заказчик</dt><dd class="col-sm-9">{{ moodboard.client|default:"Не выбран" }}</dd>
+    <dt class="col-sm-3">Дизайнер</dt>
+    <dd class="col-sm-9">
+      {% if moodboard.designer_name %}{{ moodboard.designer_name }}{% else %}{{ moodboard.designer.display_name }}{% endif %}
+    </dd>
+    <dt class="col-sm-3">Каталог</dt>
+    <dd class="col-sm-9">
+      {% if moodboard.catalog_name %}{{ moodboard.catalog_name }}{% elif moodboard.catalog %}{{ moodboard.catalog }}{% else %}Не выбран{% endif %}
+    </dd>
+    <dt class="col-sm-3">Заказчик</dt>
+    <dd class="col-sm-9">
+      {% if moodboard.client_name %}{{ moodboard.client_name }}{% elif moodboard.client %}{{ moodboard.client }}{% else %}Не выбран{% endif %}
+    </dd>
   </dl>
   {% if moodboard.palette %}
   <h2 class="h5">Палитра</h2>

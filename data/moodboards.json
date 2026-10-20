@@ -1,5 +1,29 @@
 {
-  "clients": [],
-  "catalogs": [],
-  "moodboards": []
+  "clients": [
+    {
+      "name": "Студия Альфа",
+      "email": "alpha@example.com",
+      "company": "Альфа Дизайн"
+    }
+  ],
+  "catalogs": [
+    {
+      "name": "Брендинг",
+      "description": "Идеи для фирменного стиля"
+    }
+  ],
+  "moodboards": [
+    {
+      "title": "Новый бренд",
+      "description": "Референсы для айдентики",
+      "background_color": "#112233",
+      "palette": [
+        "#112233",
+        "#AABBCC",
+        "#DDEEFF"
+      ],
+      "catalog": "Брендинг",
+      "client_email": "alpha@example.com"
+    }
+  ]
 }

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Поиск мудбордов — Moodboard{% endblock %}
+{% block content %}
+<h1>Поиск мудбордов</h1>
+<form class="row g-2 my-3" method="get">
+  <div class="col-sm-8">
+    <label class="visually-hidden" for="query">Название</label>
+    <input class="form-control" id="query" name="q" value="{{ query }}" placeholder="Название мудборда">
+  </div>
+  <div class="col-sm-4"><button class="btn btn-primary" type="submit">Найти</button></div>
+</form>
+<div class="row g-4">
+{% for board in moodboards %}
+  {% include "moodboards/includes/moodboard_card.html" with board=board %}
+{% empty %}
+  <p>По вашему запросу ничего не найдено.</p>
+{% endfor %}
+</div>
+{% endblock %}

@@ -10,21 +10,35 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image, ImageDraw
 
+from db.database import query_all, query_one
+
 from .models import Client, Designer, Moodboard, MoodboardCatalog
 
 
 def home_page(request: HttpRequest) -> HttpResponse:
+    summary = query_one("SELECT COUNT(*) AS moodboard_count FROM moodboards")
+    moodboard_count = (
+        summary["moodboard_count"] if summary is not None else Moodboard.objects.count()
+    )
     return render(
         request,
         "moodboards/home.html",
-        {"moodboard_count": Moodboard.objects.count()},
+        {"moodboard_count": moodboard_count},
     )
 
 
 def moodboard_pages(request: HttpRequest) -> HttpResponse:
-    boards = Moodboard.objects.select_related(
-        "designer", "catalog", "client"
-    ).all()
+    boards = query_all(
+        """
+        SELECT m.id, m.title, m.description, m.background_color,
+               d.display_name AS designer_name
+        FROM moodboards AS m
+        JOIN designers AS d ON d.id = m.designer_id
+        ORDER BY m.updated_at DESC
+        """
+    )
+    if not boards:
+        boards = Moodboard.objects.select_related("designer").all()
     return render(request, "moodboards/moodboards.html", {"moodboards": boards})
 
 
@@ -32,21 +46,103 @@ def moodboard_detail_page(
     request: HttpRequest,
     moodboard_id: int,
 ) -> HttpResponse:
-    board = get_object_or_404(
-        Moodboard.objects.select_related("designer", "catalog", "client"),
-        pk=moodboard_id,
+    board = query_one(
+        """
+        SELECT m.*, d.display_name AS designer_name,
+               c.name AS catalog_name, cl.name AS client_name
+        FROM moodboards AS m
+        JOIN designers AS d ON d.id = m.designer_id
+        LEFT JOIN catalogs AS c ON c.id = m.catalog_id
+        LEFT JOIN clients AS cl ON cl.id = m.client_id
+        WHERE m.id = ?
+        """,
+        (moodboard_id,),
     )
+    if board is None:
+        board = get_object_or_404(
+            Moodboard.objects.select_related("designer", "catalog", "client"),
+            pk=moodboard_id,
+        )
     return render(request, "moodboards/moodboard_detail.html", {"moodboard": board})
 
 
 def catalog_pages(request: HttpRequest) -> HttpResponse:
-    catalogs = MoodboardCatalog.objects.select_related("designer").all()
+    catalogs = query_all(
+        """
+        SELECT c.*, d.display_name AS designer_name, COUNT(m.id) AS moodboard_count
+        FROM catalogs AS c
+        JOIN designers AS d ON d.id = c.designer_id
+        LEFT JOIN moodboards AS m ON m.catalog_id = c.id
+        GROUP BY c.id, d.display_name
+        ORDER BY c.name
+        """
+    )
+    if not catalogs:
+        catalogs = MoodboardCatalog.objects.select_related("designer").all()
     return render(request, "moodboards/catalogs.html", {"catalogs": catalogs})
 
 
 def client_pages(request: HttpRequest) -> HttpResponse:
-    clients = Client.objects.all()
+    clients = query_all(
+        """
+        SELECT cl.*, COUNT(m.id) AS moodboard_count
+        FROM clients AS cl
+        LEFT JOIN moodboards AS m ON m.client_id = cl.id
+        GROUP BY cl.id
+        ORDER BY cl.name
+        """
+    )
+    if not clients:
+        clients = Client.objects.all()
     return render(request, "moodboards/clients.html", {"clients": clients})
+
+
+def moodboard_search(request: HttpRequest) -> HttpResponse:
+    query = request.GET.get("q", "").strip()
+    boards = query_all(
+        """
+        SELECT m.id, m.title, m.description, m.background_color,
+               d.display_name AS designer_name
+        FROM moodboards AS m
+        JOIN designers AS d ON d.id = m.designer_id
+        WHERE m.title LIKE ?
+        ORDER BY m.title
+        """,
+        (f"%{query}%",),
+    )
+    return render(
+        request,
+        "moodboards/search.html",
+        {"moodboards": boards, "query": query},
+    )
+
+
+def moodboard_statistics(request: HttpRequest) -> HttpResponse:
+    summary = query_one(
+        """
+        SELECT COUNT(*) AS moodboard_count,
+               COUNT(DISTINCT designer_id) AS designer_count,
+               COUNT(DISTINCT client_id) AS client_count
+        FROM moodboards
+        """
+    )
+    by_catalog = query_all(
+        """
+        SELECT COALESCE(c.name, 'Без каталога') AS catalog_name,
+               COUNT(m.id) AS moodboard_count
+        FROM moodboards AS m
+        LEFT JOIN catalogs AS c ON c.id = m.catalog_id
+        GROUP BY c.id, c.name
+        HAVING COUNT(m.id) >= ?
+        ORDER BY moodboard_count DESC
+        """,
+        (0,),
+    )
+    return render(
+        request,
+        "moodboards/statistics.html",
+        {"summary": summary, "by_catalog": by_catalog},
+    )
 
 
 def page_not_found(request: HttpRequest, exception: Exception) -> HttpResponse:

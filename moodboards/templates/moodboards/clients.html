@@ -8,6 +8,7 @@
     <h2 class="h5">{{ client.name }}</h2>
     <p class="mb-1">{{ client.email }}</p>
     <p class="text-muted mb-0">{{ client.company|default:"Компания не указана" }}</p>
+    <small class="text-muted">Мудбордов: {{ client.moodboard_count|default:0 }}</small>
   </div></div></div>
 {% empty %}<p>Заказчиков пока нет.</p>{% endfor %}
 </div>
