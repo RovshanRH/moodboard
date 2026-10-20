@@ -7,14 +7,15 @@ from .views import (
     moodboard_pages,
 )
 
+app_name = "moodboards"
 
 urlpatterns = [
-    path("moodboards/", moodboard_pages, name="moodboard-pages"),
+    path("moodboards/", moodboard_pages, name="list"),
     path(
         "moodboards/<int:moodboard_id>/",
         moodboard_detail_page,
-        name="moodboard-detail",
+        name="detail",
     ),
-    path("catalogs/", catalog_pages, name="catalog-pages"),
-    path("clients/", client_pages, name="client-pages"),
+    path("catalogs/", catalog_pages, name="catalogs"),
+    path("clients/", client_pages, name="clients"),
 ]

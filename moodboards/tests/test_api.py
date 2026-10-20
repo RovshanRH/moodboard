@@ -65,6 +65,10 @@ class MoodboardApiTests(TestCase):
         self.assertEqual(self.client.get("/moodboards/999999/").status_code, 404)
         self.assertEqual(self.client.get("/catalogs/").status_code, 200)
         self.assertEqual(self.client.get("/clients/").status_code, 200)
+        response = self.client.get("/moodboards/")
+        self.assertContains(response, "site.js")
+        self.assertContains(response, "logo.svg")
+        self.assertContains(response, "Страница проекта")
 
     def test_export_returns_png(self) -> None:
         board = Moodboard.objects.create(

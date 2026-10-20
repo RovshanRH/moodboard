@@ -1,11 +1,11 @@
-{% extends "moodboards/base.html" %}
+{% extends "base.html" %}
 {% block title %}Главная — Moodboard{% endblock %}
 {% block content %}
 <section class="hero p-5 rounded-3">
   <h1>Конструктор мудбордов</h1>
   <p class="lead">Визуальные концепции для дизайнеров, фрилансеров и творческих команд.</p>
   <p>В проекте сохранена предметная область ПР3: дизайнеры, заказчики, каталоги и мудборды.</p>
-  <a class="btn btn-primary" href="{% url 'moodboard-pages' %}">Открыть мудборды</a>
+  <a class="btn btn-primary" href="{% url 'moodboards:list' %}">Открыть мудборды</a>
 </section>
 <p class="mt-4 text-muted">В базе данных мудбордов: {{ moodboard_count }}</p>
 {% endblock %}

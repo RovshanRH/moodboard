@@ -57,7 +57,16 @@ Content-Type: application/json
 ## Веб-страницы
 
 Веб-интерфейс доступен без API-префикса и использует Django-шаблоны,
-Bootstrap 5.3 и локальный файл `moodboards/static/moodboards/site.css`:
+Bootstrap 5.3 и статические файлы приложения:
+
+- `templates/base.html` — общий базовый шаблон с блоками `title` и `content`;
+- `templates/includes/navigation.html` — подключаемая навигация;
+- `moodboards/templates/moodboards/includes/moodboard_card.html` —
+  переиспользуемая карточка мудборда;
+- `moodboards/static/moodboards/site.css` — собственные CSS-стили;
+- `moodboards/static/moodboards/logo.svg` — логотип;
+- `moodboards/static/moodboards/site.js` — JavaScript для интерактивного
+  эффекта карточек.
 
 - `GET /` — главная страница проекта;
 - `GET /moodboards/` — список мудбордов;
@@ -65,6 +74,11 @@ Bootstrap 5.3 и локальный файл `moodboards/static/moodboards/site.
 - `GET /catalogs/` — список каталогов;
 - `GET /clients/` — список заказчиков;
 - неизвестные адреса обрабатываются страницей 404.
+
+Шаблоны используют наследование через `{% extends %}`, блоки `{% block %}`,
+включение через `{% include %}`, циклы, условия, фильтры
+`default` и `truncatewords`, а ссылки формируются именованными URL
+с пространством имён `moodboards`.
 
 JSON API сохранён отдельно под префиксом `/api/`: `POST /api/auth/`,
 `GET/POST /api/moodboards/` и `GET /api/moodboards/<id>/export/`.
@@ -114,6 +128,10 @@ moodboard/
 │   ├── settings.py
 │   ├── urls.py
 │   └── wsgi.py
+├── templates/
+│   ├── base.html
+│   └── includes/
+│       └── navigation.html
 ├── moodboards/
 │   ├── api_urls.py
 │   ├── templates/

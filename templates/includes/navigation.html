@@ -1,0 +1,14 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'home' %}">
+      <img src="{% static 'moodboards/logo.svg' %}" width="28" height="28" alt="">
+      Moodboard
+    </a>
+    <div class="navbar-nav">
+      <a class="nav-link" href="{% url 'moodboards:list' %}">Мудборды</a>
+      <a class="nav-link" href="{% url 'moodboards:catalogs' %}">Каталоги</a>
+      <a class="nav-link" href="{% url 'moodboards:clients' %}">Заказчики</a>
+    </div>
+  </div>
+</nav>

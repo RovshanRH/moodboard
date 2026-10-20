@@ -1,7 +1,7 @@
-{% extends "moodboards/base.html" %}
+{% extends "base.html" %}
 {% block title %}{{ moodboard.title }} — Moodboard{% endblock %}
 {% block content %}
-<a href="{% url 'moodboard-pages' %}">← Все мудборды</a>
+<a href="{% url 'moodboards:list' %}">← Все мудборды</a>
 <article class="mt-3 p-4 rounded-3" style="background-color: {{ moodboard.background_color }}">
   <h1>{{ moodboard.title }}</h1>
   <p class="lead">{{ moodboard.description|default:"Описание не указано." }}</p>
