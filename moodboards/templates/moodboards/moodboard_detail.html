@@ -1,0 +1,22 @@
+{% extends "moodboards/base.html" %}
+{% block title %}{{ moodboard.title }} — Moodboard{% endblock %}
+{% block content %}
+<a href="{% url 'moodboard-pages' %}">← Все мудборды</a>
+<article class="mt-3 p-4 rounded-3" style="background-color: {{ moodboard.background_color }}">
+  <h1>{{ moodboard.title }}</h1>
+  <p class="lead">{{ moodboard.description|default:"Описание не указано." }}</p>
+  <dl class="row">
+    <dt class="col-sm-3">Дизайнер</dt><dd class="col-sm-9">{{ moodboard.designer.display_name }}</dd>
+    <dt class="col-sm-3">Каталог</dt><dd class="col-sm-9">{{ moodboard.catalog|default:"Не выбран" }}</dd>
+    <dt class="col-sm-3">Заказчик</dt><dd class="col-sm-9">{{ moodboard.client|default:"Не выбран" }}</dd>
+  </dl>
+  {% if moodboard.palette %}
+  <h2 class="h5">Палитра</h2>
+  <div class="d-flex gap-2">
+    {% for color in moodboard.palette %}
+    <span class="color-swatch" title="{{ color }}" style="background-color: {{ color }}"></span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</article>
+{% endblock %}

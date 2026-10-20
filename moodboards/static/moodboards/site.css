@@ -1,0 +1,4 @@
+body { background: #f8f9fa; }
+.hero { background: linear-gradient(135deg, #e8def8, #f4efe6); }
+.color-swatch { border: 1px solid rgba(0, 0, 0, .25); border-radius: .25rem; display: inline-block; height: 2.5rem; width: 4rem; }
+a { color: #5a3d8e; }

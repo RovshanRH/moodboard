@@ -5,11 +5,52 @@ from typing import Any, cast
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.http import FileResponse, HttpRequest, JsonResponse
+from django.http import FileResponse, HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image, ImageDraw
 
 from .models import Client, Designer, Moodboard, MoodboardCatalog
+
+
+def home_page(request: HttpRequest) -> HttpResponse:
+    return render(
+        request,
+        "moodboards/home.html",
+        {"moodboard_count": Moodboard.objects.count()},
+    )
+
+
+def moodboard_pages(request: HttpRequest) -> HttpResponse:
+    boards = Moodboard.objects.select_related(
+        "designer", "catalog", "client"
+    ).all()
+    return render(request, "moodboards/moodboards.html", {"moodboards": boards})
+
+
+def moodboard_detail_page(
+    request: HttpRequest,
+    moodboard_id: int,
+) -> HttpResponse:
+    board = get_object_or_404(
+        Moodboard.objects.select_related("designer", "catalog", "client"),
+        pk=moodboard_id,
+    )
+    return render(request, "moodboards/moodboard_detail.html", {"moodboard": board})
+
+
+def catalog_pages(request: HttpRequest) -> HttpResponse:
+    catalogs = MoodboardCatalog.objects.select_related("designer").all()
+    return render(request, "moodboards/catalogs.html", {"catalogs": catalogs})
+
+
+def client_pages(request: HttpRequest) -> HttpResponse:
+    clients = Client.objects.all()
+    return render(request, "moodboards/clients.html", {"clients": clients})
+
+
+def page_not_found(request: HttpRequest, exception: Exception) -> HttpResponse:
+    return render(request, "404.html", status=404)
 
 
 def _json_body(request: HttpRequest) -> dict[str, Any] | None:
@@ -162,6 +203,12 @@ def moodboard_list(request: HttpRequest) -> JsonResponse:
 
     description = _text_value(data, "description")
     background_color = data.get("background_color", "#F4EFE6")
+    palette = data.get("palette", [])
+    if not isinstance(palette, list):
+        return JsonResponse(
+            {"error": "palette должна быть списком цветов."},
+            status=400,
+        )
     if not isinstance(background_color, str):
         return JsonResponse(
             {"error": "background_color должен быть строкой формата #RRGGBB."},
@@ -174,6 +221,7 @@ def moodboard_list(request: HttpRequest) -> JsonResponse:
         title=title,
         description=description or "",
         background_color=background_color,
+        palette=palette,
     )
     try:
         moodboard.full_clean()

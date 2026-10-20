@@ -1,0 +1,14 @@
+{% extends "moodboards/base.html" %}
+{% block title %}Каталоги — Moodboard{% endblock %}
+{% block content %}
+<h1>Каталоги</h1>
+<div class="list-group mt-3">
+{% for catalog in catalogs %}
+  <div class="list-group-item">
+    <h2 class="h5">{{ catalog.name }}</h2>
+    <p class="mb-0">{{ catalog.description|default:"Описание не указано." }}</p>
+    <small class="text-muted">Дизайнер: {{ catalog.designer.display_name }}</small>
+  </div>
+{% empty %}<p>Каталогов пока нет.</p>{% endfor %}
+</div>
+{% endblock %}

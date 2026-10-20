@@ -1,0 +1,20 @@
+{% extends "moodboards/base.html" %}
+{% block title %}Мудборды — Moodboard{% endblock %}
+{% block content %}
+<h1 class="mb-4">Мудборды</h1>
+<div class="row g-4">
+{% for board in moodboards %}
+  <div class="col-md-6 col-lg-4">
+    <article class="card h-100 shadow-sm" style="border-top: .4rem solid {{ board.background_color }}">
+      <div class="card-body">
+        <h2 class="h5 card-title"><a href="{% url 'moodboard-detail' board.pk %}">{{ board.title }}</a></h2>
+        <p class="card-text">{{ board.description|default:"Описание не указано."|truncatewords:25 }}</p>
+        <p class="small text-muted mb-0">Дизайнер: {{ board.designer.display_name }}</p>
+      </div>
+    </article>
+  </div>
+{% empty %}
+  <p>Мудбордов пока нет.</p>
+{% endfor %}
+</div>
+{% endblock %}

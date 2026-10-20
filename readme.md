@@ -54,6 +54,21 @@ Content-Type: application/json
 
 Выход выполняется запросом `DELETE /api/auth/`.
 
+## Веб-страницы
+
+Веб-интерфейс доступен без API-префикса и использует Django-шаблоны,
+Bootstrap 5.3 и локальный файл `moodboards/static/moodboards/site.css`:
+
+- `GET /` — главная страница проекта;
+- `GET /moodboards/` — список мудбордов;
+- `GET /moodboards/<id>/` — подробности мудборда (динамический URL);
+- `GET /catalogs/` — список каталогов;
+- `GET /clients/` — список заказчиков;
+- неизвестные адреса обрабатываются страницей 404.
+
+JSON API сохранён отдельно под префиксом `/api/`: `POST /api/auth/`,
+`GET/POST /api/moodboards/` и `GET /api/moodboards/<id>/export/`.
+
 ### Создание и просмотр мудбордов
 
 Авторизованный дизайнер может получить собственные мудборды:
@@ -100,6 +115,9 @@ moodboard/
 │   ├── urls.py
 │   └── wsgi.py
 ├── moodboards/
+│   ├── api_urls.py
+│   ├── templates/
+│   ├── static/
 │   ├── migrations/
 │   ├── management/
 │   │   └── commands/
@@ -143,6 +161,9 @@ python manage.py runserver
 
 Также `python main.py` запускает сервер разработки на `127.0.0.1:8000`.
 
+После запуска откройте `http://127.0.0.1:8000/`. Перед первым запуском
+примените миграции командой `python manage.py migrate`.
+
 ## Проверка
 
 ```text
@@ -151,6 +172,9 @@ python manage.py test
 python -m pytest -v
 python -m flake8 .
 ```
+
+Текущий этап ПР5 сохраняет консольную и JSON-функциональность ПР3, а
+взаимодействие с данными дополнено веб-интерфейсом Django и SQLite ORM.
 
 ## Загрузка и сохранение данных
 

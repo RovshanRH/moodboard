@@ -1,0 +1,9 @@
+{% extends "moodboards/base.html" %}
+{% block title %}Страница не найдена — Moodboard{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <h1>404</h1>
+  <p class="lead">Запрошенная страница не найдена.</p>
+  <a class="btn btn-primary" href="{% url 'home' %}">На главную</a>
+</div>
+{% endblock %}

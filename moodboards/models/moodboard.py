@@ -1,66 +1,15 @@
-<<<<<<< HEAD:moodboards/models.py
 import re
-
-from django.core.exceptions import ValidationError
-from django.contrib.auth.models import User
-from django.core.validators import RegexValidator
-from django.db import models
-
-HEX_COLOR_RE = r"^#[0-9A-Fa-f]{6}$"
-
-
-class Designer(models.Model):
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name="designer",
-    )
-    display_name = models.CharField(max_length=120)
-    bio = models.TextField(blank=True)
-
-    def __str__(self) -> str:
-        return self.display_name
-
-
-class Client(models.Model):
-    name = models.CharField(max_length=160)
-    email = models.EmailField(unique=True)
-    company = models.CharField(max_length=160, blank=True)
-
-    def __str__(self) -> str:
-        return self.name
-
-
-class MoodboardCatalog(models.Model):
-    designer = models.ForeignKey(
-        Designer,
-        on_delete=models.CASCADE,
-        related_name="catalogs",
-    )
-    name = models.CharField(max_length=120)
-    description = models.TextField(blank=True)
-
-    class Meta:
-        ordering = ["name"]
-        constraints = [
-            models.UniqueConstraint(
-                fields=["designer", "name"],
-                name="unique_catalog_per_designer",
-            )
-        ]
-
-    def __str__(self) -> str:
-        return self.name
-=======
 from typing import Any
 
+from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 
 from .catalog import MoodboardCatalog
 from .client import Client
 from .designer import Designer
->>>>>>> c6cda65bcdc4a734bbbf81b6281e8b659e333028:moodboards/models/moodboard.py
+
+HEX_COLOR_RE = r"^#[0-9A-Fa-f]{6}$"
 
 
 def validate_palette(value: list[str]) -> None:
@@ -68,8 +17,9 @@ def validate_palette(value: list[str]) -> None:
         raise ValidationError("Палитра должна быть списком цветов.")
 
     for color in value:
-        if not isinstance(color, str) or not re.fullmatch(HEX_COLOR_RE[1:-1], 
-                                                          color):
+        if not isinstance(color, str) or not re.fullmatch(
+            HEX_COLOR_RE[1:-1], color
+        ):
             raise ValidationError("Каждый цвет должен быть в формате #RRGGBB.")
 
 
@@ -105,8 +55,11 @@ class Moodboard(models.Model):
         default="#F4EFE6",
         validators=[HEX_COLOR],
     )
-    palette = models.JSONField(default=list, blank=True, 
-                               validators=[validate_palette])
+    palette = models.JSONField(
+        default=list,
+        blank=True,
+        validators=[validate_palette],
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -50,6 +50,22 @@ class MoodboardApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()["items"]), 1)
 
+    def test_web_pages_and_dynamic_not_found(self) -> None:
+        board = Moodboard.objects.create(
+            designer=Designer.objects.get(user__username="designer"),
+            title="Страница проекта",
+            palette=["#112233"],
+        )
+        self.assertEqual(self.client.get("/").status_code, 200)
+        self.assertContains(self.client.get("/moodboards/"), board.title)
+        self.assertContains(
+            self.client.get(f"/moodboards/{board.pk}/"),
+            "Страница проекта",
+        )
+        self.assertEqual(self.client.get("/moodboards/999999/").status_code, 404)
+        self.assertEqual(self.client.get("/catalogs/").status_code, 200)
+        self.assertEqual(self.client.get("/clients/").status_code, 200)
+
     def test_export_returns_png(self) -> None:
         board = Moodboard.objects.create(
             designer=Designer.objects.get(user__username="designer"),
