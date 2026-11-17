@@ -11,6 +11,17 @@ from catalogs.models import MoodboardCatalog
 HEX_COLOR_RE = r"^#[0-9A-Fa-f]{6}$"
 
 
+class MoodboardQuerySet(models.QuerySet["Moodboard"]):
+    def with_related(self) -> "MoodboardQuerySet":
+        return self.select_related("designer", "catalog", "client")
+
+    def search(self, query: str) -> "MoodboardQuerySet":
+        return self.filter(title__icontains=query.strip())
+
+    def for_designer(self, designer: Designer) -> "MoodboardQuerySet":
+        return self.filter(designer=designer)
+
+
 def validate_palette(value: list[str]) -> None:
     if not isinstance(value, list):
         raise ValidationError("Палитра должна быть списком цветов.")
@@ -60,6 +71,8 @@ class Moodboard(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = MoodboardQuerySet.as_manager()
+
     class Meta:
         db_table = "moodboards_moodboard"
         ordering = ["-updated_at"]
@@ -95,4 +108,4 @@ class Moodboard(models.Model):
         }
 
 
-__all__ = ["Moodboard", "validate_palette"]
+__all__ = ["Moodboard", "MoodboardQuerySet", "validate_palette"]

@@ -4,6 +4,7 @@ from typing import Any, cast
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db.models import Count, Value
 from django.db.models.functions import Coalesce
 from django.http import FileResponse, HttpRequest, HttpResponse, JsonResponse
@@ -18,8 +19,13 @@ from .models import Moodboard
 
 
 def moodboard_pages(request: HttpRequest) -> HttpResponse:
-    boards = Moodboard.objects.select_related("designer").all()
-    return render(request, "moodboards/moodboards.html", {"moodboards": boards})
+    boards = Moodboard.objects.with_related()
+    page_obj = Paginator(boards, 6).get_page(request.GET.get("page"))
+    return render(
+        request,
+        "moodboards/moodboards.html",
+        {"moodboards": page_obj, "page_obj": page_obj},
+    )
 
 
 def moodboard_create_page(request: HttpRequest) -> HttpResponse:
@@ -95,7 +101,7 @@ def moodboard_detail_page(
     moodboard_id: int,
 ) -> HttpResponse:
     board = get_object_or_404(
-        Moodboard.objects.select_related("designer", "catalog", "client"),
+        Moodboard.objects.with_related(),
         pk=moodboard_id,
     )
     return render(request, "moodboards/moodboard_detail.html", {"moodboard": board})
@@ -104,14 +110,15 @@ def moodboard_detail_page(
 def moodboard_search(request: HttpRequest) -> HttpResponse:
     query = request.GET.get("q", "").strip()
     boards = (
-        Moodboard.objects.select_related("designer")
-        .filter(title__icontains=query)
+        Moodboard.objects.with_related()
+        .search(query)
         .order_by("title")
     )
+    page_obj = Paginator(boards, 6).get_page(request.GET.get("page"))
     return render(
         request,
         "moodboards/search.html",
-        {"moodboards": boards, "query": query},
+        {"moodboards": page_obj, "page_obj": page_obj, "query": query},
     )
 
 
@@ -191,9 +198,7 @@ def moodboard_list(request: HttpRequest) -> JsonResponse:
             status=403,
         )
     if request.method == "GET":
-        boards = Moodboard.objects.filter(designer=designer).select_related(
-            "designer", "catalog", "client"
-        )
+        boards = Moodboard.objects.for_designer(designer).with_related()
         return JsonResponse({"items": [_moodboard_data(board) for board in boards]})
 
     if request.method != "POST":

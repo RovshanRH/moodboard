@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from django.contrib import admin
 from django.contrib.auth.models import User
 from django.test import TestCase
 
@@ -88,6 +89,32 @@ class MoodboardApiTests(TestCase):
         )
         self.assertEqual(joined.catalog.name, "Брендинг")
         self.assertEqual(joined.client.email, "alpha@example.com")
+
+    def test_queryset_helpers_and_pagination(self) -> None:
+        designer = Designer.objects.get(user__username="designer")
+        for index in range(7):
+            Moodboard.objects.create(
+                designer=designer,
+                title=f"Пагинация {index}",
+            )
+
+        self.assertEqual(
+            Moodboard.objects.search("Пагинация").count(),
+            7,
+        )
+        self.assertEqual(
+            Moodboard.objects.for_designer(designer).count(),
+            7,
+        )
+        response = self.client.get("/moodboards/?page=2")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["page_obj"].number, 2)
+
+    def test_admin_registers_project_models(self) -> None:
+        self.assertIn(Designer, admin.site._registry)
+        self.assertIn(Client, admin.site._registry)
+        self.assertIn(MoodboardCatalog, admin.site._registry)
+        self.assertIn(Moodboard, admin.site._registry)
 
     def test_export_returns_png(self) -> None:
         board = Moodboard.objects.create(
