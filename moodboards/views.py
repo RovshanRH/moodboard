@@ -1,22 +1,14 @@
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 
-from db.database import query_one
-
 from boards.models import Moodboard
 
 
 def home_page(request: HttpRequest) -> HttpResponse:
-    summary = query_one("SELECT COUNT(*) AS moodboard_count FROM moodboards")
-    moodboard_count = (
-        summary["moodboard_count"]
-        if summary is not None
-        else Moodboard.objects.count()
-    )
     return render(
         request,
         "moodboards/home.html",
-        {"moodboard_count": moodboard_count},
+        {"moodboard_count": Moodboard.objects.count()},
     )
 
 

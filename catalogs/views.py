@@ -3,11 +3,10 @@ from typing import Any, cast
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.db.models import Count
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-
-from db.database import query_all
 
 from accounts.models import Client, Designer
 from boards.models import Moodboard
@@ -16,33 +15,19 @@ from .models import MoodboardCatalog
 
 
 def catalog_pages(request: HttpRequest) -> HttpResponse:
-    catalogs = query_all(
-        """
-        SELECT c.*, d.display_name AS designer_name, COUNT(m.id) AS moodboard_count
-        FROM catalogs AS c
-        JOIN designers AS d ON d.id = c.designer_id
-        LEFT JOIN moodboards AS m ON m.catalog_id = c.id
-        GROUP BY c.id, d.display_name
-        ORDER BY c.name
-        """
+    catalogs = (
+        MoodboardCatalog.objects.select_related("designer")
+        .annotate(moodboard_count=Count("moodboards"))
+        .order_by("name")
     )
-    if not catalogs:
-        catalogs = MoodboardCatalog.objects.select_related("designer").all()
     return render(request, "moodboards/catalogs.html", {"catalogs": catalogs})
 
 
 def client_pages(request: HttpRequest) -> HttpResponse:
-    clients = query_all(
-        """
-        SELECT cl.*, COUNT(m.id) AS moodboard_count
-        FROM clients AS cl
-        LEFT JOIN moodboards AS m ON m.client_id = cl.id
-        GROUP BY cl.id
-        ORDER BY cl.name
-        """
+    clients = (
+        Client.objects.annotate(moodboard_count=Count("moodboards"))
+        .order_by("name")
     )
-    if not clients:
-        clients = Client.objects.all()
     return render(request, "moodboards/clients.html", {"clients": clients})
 
 

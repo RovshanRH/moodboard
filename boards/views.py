@@ -4,12 +4,12 @@ from typing import Any, cast
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.db.models import Count, Value
+from django.db.models.functions import Coalesce
 from django.http import FileResponse, HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from PIL import Image, ImageDraw
-
-from db.database import query_all, query_one
 
 from accounts.models import Client, Designer
 from catalogs.models import MoodboardCatalog
@@ -18,17 +18,7 @@ from .models import Moodboard
 
 
 def moodboard_pages(request: HttpRequest) -> HttpResponse:
-    boards = query_all(
-        """
-        SELECT m.id, m.title, m.description, m.background_color,
-               d.display_name AS designer_name
-        FROM moodboards AS m
-        JOIN designers AS d ON d.id = m.designer_id
-        ORDER BY m.updated_at DESC
-        """
-    )
-    if not boards:
-        boards = Moodboard.objects.select_related("designer").all()
+    boards = Moodboard.objects.select_related("designer").all()
     return render(request, "moodboards/moodboards.html", {"moodboards": boards})
 
 
@@ -104,38 +94,19 @@ def moodboard_detail_page(
     request: HttpRequest,
     moodboard_id: int,
 ) -> HttpResponse:
-    board = query_one(
-        """
-        SELECT m.*, d.display_name AS designer_name,
-               c.name AS catalog_name, cl.name AS client_name
-        FROM moodboards AS m
-        JOIN designers AS d ON d.id = m.designer_id
-        LEFT JOIN catalogs AS c ON c.id = m.catalog_id
-        LEFT JOIN clients AS cl ON cl.id = m.client_id
-        WHERE m.id = ?
-        """,
-        (moodboard_id,),
+    board = get_object_or_404(
+        Moodboard.objects.select_related("designer", "catalog", "client"),
+        pk=moodboard_id,
     )
-    if board is None:
-        board = get_object_or_404(
-            Moodboard.objects.select_related("designer", "catalog", "client"),
-            pk=moodboard_id,
-        )
     return render(request, "moodboards/moodboard_detail.html", {"moodboard": board})
 
 
 def moodboard_search(request: HttpRequest) -> HttpResponse:
     query = request.GET.get("q", "").strip()
-    boards = query_all(
-        """
-        SELECT m.id, m.title, m.description, m.background_color,
-               d.display_name AS designer_name
-        FROM moodboards AS m
-        JOIN designers AS d ON d.id = m.designer_id
-        WHERE m.title LIKE ?
-        ORDER BY m.title
-        """,
-        (f"%{query}%",),
+    boards = (
+        Moodboard.objects.select_related("designer")
+        .filter(title__icontains=query)
+        .order_by("title")
     )
     return render(
         request,
@@ -145,25 +116,18 @@ def moodboard_search(request: HttpRequest) -> HttpResponse:
 
 
 def moodboard_statistics(request: HttpRequest) -> HttpResponse:
-    summary = query_one(
-        """
-        SELECT COUNT(*) AS moodboard_count,
-               COUNT(DISTINCT designer_id) AS designer_count,
-               COUNT(DISTINCT client_id) AS client_count
-        FROM moodboards
-        """
+    summary = Moodboard.objects.aggregate(
+        moodboard_count=Count("id"),
+        designer_count=Count("designer_id", distinct=True),
+        client_count=Count("client_id", distinct=True),
     )
-    by_catalog = query_all(
-        """
-        SELECT COALESCE(c.name, 'Без каталога') AS catalog_name,
-               COUNT(m.id) AS moodboard_count
-        FROM moodboards AS m
-        LEFT JOIN catalogs AS c ON c.id = m.catalog_id
-        GROUP BY c.id, c.name
-        HAVING COUNT(m.id) >= ?
-        ORDER BY moodboard_count DESC
-        """,
-        (0,),
+    by_catalog = (
+        Moodboard.objects.values("catalog_id", "catalog__name")
+        .annotate(
+            catalog_name=Coalesce("catalog__name", Value("Без каталога")),
+            moodboard_count=Count("id"),
+        )
+        .order_by("-moodboard_count")
     )
     return render(
         request,
