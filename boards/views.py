@@ -15,6 +15,7 @@ from PIL import Image, ImageDraw
 from accounts.models import Client, Designer
 from catalogs.models import MoodboardCatalog
 
+from .forms import MoodboardForm, MoodboardSearchForm
 from .models import Moodboard
 
 
@@ -29,71 +30,78 @@ def moodboard_pages(request: HttpRequest) -> HttpResponse:
 
 
 def moodboard_create_page(request: HttpRequest) -> HttpResponse:
-    designer = None
-    if request.user.is_authenticated:
-        designer = Designer.objects.filter(user=cast(User, request.user)).first()
+    if not request.user.is_authenticated:
+        return redirect("moodboards:login")
+
+    designer = Designer.objects.filter(user=cast(User, request.user)).first()
     if designer is None:
         return redirect("moodboards:login")
 
-    catalogs = MoodboardCatalog.objects.filter(designer=designer)
-    clients = Client.objects.all().order_by("name")
-    error = ""
+    form = MoodboardForm(designer=designer)
     if request.method == "POST":
-        title = request.POST.get("title", "").strip()
-        description = request.POST.get("description", "").strip()
-        background_color = request.POST.get("background_color", "#F4EFE6").strip()
-        palette_text = request.POST.get("palette", "")
-        catalog_id = request.POST.get("catalog_id", "")
-        client_id = request.POST.get("client_id", "")
-
-        palette = [
-            color.strip()
-            for color in palette_text.split(",")
-            if color.strip()
-        ]
-        catalog = (
-            catalogs.filter(pk=catalog_id).first()
-            if catalog_id
-            else None
-        )
-        client = clients.filter(pk=client_id).first() if client_id else None
-        if not title:
-            error = "Название мудборда обязательно."
-        elif catalog_id and catalog is None:
-            error = "Выбранный каталог не найден."
-        elif client_id and client is None:
-            error = "Выбранный заказчик не найден."
-        else:
-            moodboard = Moodboard(
-                designer=designer,
-                catalog=catalog,
-                client=client,
-                title=title,
-                description=description,
-                background_color=background_color,
-                palette=palette,
-            )
-            try:
-                moodboard.full_clean()
-                moodboard.save()
-            except ValidationError as validation_error:
-                error = "; ".join(
-                    message
-                    for messages in validation_error.message_dict.values()
-                    for message in messages
-                )
-            else:
-                return redirect("moodboards:detail", moodboard_id=moodboard.pk)
+        form = MoodboardForm(request.POST, request.FILES, designer=designer)
+        if form.is_valid():
+            moodboard = form.save(commit=False)
+            moodboard.designer = designer
+            moodboard.save()
+            return redirect("moodboards:detail", moodboard_id=moodboard.pk)
 
     return render(
         request,
         "moodboards/moodboard_form.html",
         {
-            "catalogs": catalogs,
-            "clients": clients,
-            "error": error,
+            "form": form,
+            "is_edit": False,
         },
     )
+
+
+def moodboard_edit_page(request: HttpRequest, moodboard_id: int) -> HttpResponse:
+    if not request.user.is_authenticated:
+        return redirect("moodboards:login")
+
+    designer = Designer.objects.filter(user=cast(User, request.user)).first()
+    if designer is None:
+        return redirect("moodboards:login")
+
+    moodboard = get_object_or_404(Moodboard, pk=moodboard_id, designer=designer)
+    form = MoodboardForm(instance=moodboard, designer=designer)
+    if request.method == "POST":
+        form = MoodboardForm(
+            request.POST,
+            request.FILES,
+            instance=moodboard,
+            designer=designer,
+        )
+        if form.is_valid():
+            moodboard = form.save()
+            return redirect("moodboards:detail", moodboard_id=moodboard.pk)
+
+    return render(
+        request,
+        "moodboards/moodboard_form.html",
+        {
+            "form": form,
+            "is_edit": True,
+            "moodboard": moodboard,
+        },
+    )
+
+
+def moodboard_delete_page(request: HttpRequest, moodboard_id: int) -> HttpResponse:
+    if not request.user.is_authenticated:
+        return redirect("moodboards:login")
+
+    designer = Designer.objects.filter(user=cast(User, request.user)).first()
+    if designer is None:
+        return redirect("moodboards:login")
+
+    moodboard = get_object_or_404(Moodboard, pk=moodboard_id, designer=designer)
+    if request.method == "POST":
+        moodboard.delete()
+        return redirect("moodboards:list")
+
+    return redirect("moodboards:detail", moodboard_id=moodboard.pk)
 
 
 def moodboard_detail_page(
@@ -108,7 +116,10 @@ def moodboard_detail_page(
 
 
 def moodboard_search(request: HttpRequest) -> HttpResponse:
-    query = request.GET.get("q", "").strip()
+    form = MoodboardSearchForm(request.GET)
+    query = ""
+    if form.is_valid():
+        query = (form.cleaned_data.get("q") or "").strip()
     boards = (
         Moodboard.objects.with_related()
         .search(query)
@@ -118,7 +129,12 @@ def moodboard_search(request: HttpRequest) -> HttpResponse:
     return render(
         request,
         "moodboards/search.html",
-        {"moodboards": page_obj, "page_obj": page_obj, "query": query},
+        {
+            "moodboards": page_obj,
+            "page_obj": page_obj,
+            "query": query,
+            "form": form,
+        },
     )
 
 

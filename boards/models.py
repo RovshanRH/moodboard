@@ -63,6 +63,11 @@ class Moodboard(models.Model):
         default="#F4EFE6",
         validators=[HEX_COLOR],
     )
+    image = models.ImageField(
+        upload_to="moodboards/",
+        blank=True,
+        null=True,
+    )
     palette = models.JSONField(
         default=list,
         blank=True,
@@ -103,6 +108,7 @@ class Moodboard(models.Model):
             "title": self.title,
             "description": self.description,
             "background_color": self.background_color,
+            "image": self.image.url if self.image else None,
             "catalog": self.catalog.name if self.catalog else None,
             "client_email": self.client.email if self.client else None,
         }

@@ -9,14 +9,4 @@ class Migration(migrations.Migration):
         ("boards", "0001_initial"),
     ]
 
-    operations = [
-        migrations.SeparateDatabaseAndState(
-            state_operations=[
-                migrations.DeleteModel(name="Moodboard"),
-                migrations.DeleteModel(name="MoodboardCatalog"),
-                migrations.DeleteModel(name="Client"),
-                migrations.DeleteModel(name="Designer"),
-            ],
-            database_operations=[],
-        )
-    ]
+    operations = []

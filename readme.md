@@ -91,6 +91,8 @@ Bootstrap 5.3 и статические файлы приложения:
 - `GET /` — главная страница проекта;
 - `GET /moodboards/` — список мудбордов;
 - `GET/POST /moodboards/create/` — форма создания мудборда для дизайнера;
+- `GET/POST /moodboards/<id>/edit/` — форма редактирования;
+- `POST /moodboards/<id>/delete/` — удаление мудборда;
 - `GET /moodboards/<id>/` — подробности мудборда (динамический URL);
 - `GET /catalogs/` — список каталогов;
 - `GET /clients/` — список заказчиков;

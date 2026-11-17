@@ -2,7 +2,9 @@ from django.urls import path
 
 from accounts.views import login_page, register_page
 from boards.views import (
+    moodboard_delete_page,
     moodboard_detail_page,
+    moodboard_edit_page,
     moodboard_pages,
     moodboard_search,
     moodboard_statistics,
@@ -19,6 +21,16 @@ urlpatterns = [
         "moodboards/<int:moodboard_id>/",
         moodboard_detail_page,
         name="detail",
+    ),
+    path(
+        "moodboards/<int:moodboard_id>/edit/",
+        moodboard_edit_page,
+        name="edit",
+    ),
+    path(
+        "moodboards/<int:moodboard_id>/delete/",
+        moodboard_delete_page,
+        name="delete",
     ),
     path("catalogs/", catalog_pages, name="catalogs"),
     path("clients/", client_pages, name="clients"),

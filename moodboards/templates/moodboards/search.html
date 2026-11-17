@@ -4,8 +4,9 @@
 <h1>Поиск мудбордов</h1>
 <form class="row g-2 my-3" method="get">
   <div class="col-sm-8">
-    <label class="visually-hidden" for="query">Название</label>
-    <input class="form-control" id="query" name="q" value="{{ query }}" placeholder="Название мудборда">
+    {{ form.q.label_tag }}
+    {{ form.q }}
+    {% if form.q.errors %}<div class="text-danger">{{ form.q.errors }}</div>{% endif %}
   </div>
   <div class="col-sm-4"><button class="btn btn-primary" type="submit">Найти</button></div>
 </form>
